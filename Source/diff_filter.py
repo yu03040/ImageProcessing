@@ -5,37 +5,38 @@ import numpy.linalg as la
 from scipy import sparse
 from scipy.sparse import csr_matrix
 
-# 画像の読み込み
+# 正方形のみの画像の読み込み
 grayX = cv2.imread("image/yasai256.jpg", 0) / 255
 
 # 画像サイズを求める
 m, n = grayX.shape
 
 # ➀周期シフトして差分を求める
-grayX_v = abs(grayX[np.roll(np.arange(n), -1), :] - grayX) # 縦方向に周期シフト - 自分
-grayX_h = abs(grayX[:, np.roll(np.arange(m), -1)] - grayX) # 横方向に周期シフト - 自分
+grayX_v = abs(grayX[np.roll(np.arange(m), -1), :] - grayX) # 縦方向に周期シフト - 自分
+grayX_h = abs(grayX[:, np.roll(np.arange(n), -1)] - grayX) # 横方向に周期シフト - 自分
 grayX_ = grayX_v + grayX_h # 縦横
 
 # ➁線形代数を使って差分を求める
-D0 = -np.eye(m) + np.roll(np.eye(m), -1, axis = 0)
+D0 = -np.eye(n) + np.roll(np.eye(n), -1, axis = 0)
 print(D0)
 
 # クロネッカー積を使ってフィルタ係数を求める
 Dv = sparse.kron(csr_matrix(np.eye(m)), csr_matrix(D0)) # 単位行列 ⊗ D0
-Dh = sparse.kron(csr_matrix(D0),csr_matrix(np.eye(n))) # D0 ⊗ 単位行列
+# Dh = sparse.kron(csr_matrix(D0),csr_matrix(np.eye(n))) # D0 ⊗ 単位行列
+Dh = Dv
 
 # 画像データ(2次元配列)からm×n行1列のベクトルデータに変換
 grayX_vec = grayX.reshape(m * n, 1, order = 'F')
+grayX_vec2 = grayX.reshape(m * n, 1, order = 'C')
 
 # エッジ強度(検出)の計算
 grayX_dv = abs(Dv @ grayX_vec) # 縦
-grayX_dh = abs(Dh @ grayX_vec) # 横
-grayX_d = grayX_dv + grayX_dh # 縦横
+grayX_dh = abs(Dh @ grayX_vec2) # 横
 
 # 画像データ(2次元配列)に戻す
 grayX_dv_ = grayX_dv.reshape(grayX.shape, order = 'F')
-grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'F')
-grayX_d_ = grayX_d.reshape(grayX.shape, order = 'F')
+grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'C')
+grayX_d_ = grayX_dv_ + grayX_dh_
 
 # ➀、➁の誤差を表示
 print(la.norm(grayX_v - grayX_dv_))
