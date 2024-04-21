@@ -5,18 +5,18 @@ import numpy.linalg as la
 from scipy import sparse
 from scipy.sparse import csr_matrix
 
-# 長方形の画像の読み込み
-grayX = cv2.imread("image/yasai3_2.jpg", 0) / 255
+# 長方形を含む四角形の画像の読み込み
+grayX = cv2.imread("image/yasai512_256.jpg", 0) / 255
 
 # 画像サイズを求める
 y, x = grayX.shape
 
-# ➀周期シフトして差分を求める
+# 1.周期シフトして差分を求める
 grayX_v = abs(grayX[np.roll(np.arange(y), -1), :] - grayX) # 縦方向に周期シフト - 自分
 grayX_h = abs(grayX[:, np.roll(np.arange(x), -1)] - grayX) # 横方向に周期シフト - 自分
 grayX_ = grayX_v + grayX_h # 縦横
 
-# # ➁線形代数を使って差分を求める
+# 2.線形代数を使って差分を求める
 D0_v = -np.eye(y) + np.roll(np.eye(y), -1, axis = 0)
 D0_h = -np.eye(x) + np.roll(np.eye(x), -1, axis = 0)
 print(D0_v)
@@ -42,7 +42,7 @@ grayX_dv_ = grayX_dv.reshape(grayX.shape, order = 'F')
 grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'C')
 grayX_d_ = grayX_dv_ + grayX_dh_
 
-# ➀、➁の誤差を表示
+# 1、2 の誤差を表示
 print(la.norm(grayX_v - grayX_dv_))
 print(la.norm(grayX_h - grayX_dh_))
 print(la.norm(grayX_ - grayX_d_))

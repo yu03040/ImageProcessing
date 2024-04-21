@@ -11,12 +11,12 @@ grayX = cv2.imread("image/yasai256.jpg", 0) / 255
 # 画像サイズを求める
 m, n = grayX.shape
 
-# ➀周期シフトして差分を求める
+# 1.周期シフトして差分を求める
 grayX_v = abs(grayX[np.roll(np.arange(m), -1), :] - grayX) # 縦方向に周期シフト - 自分
 grayX_h = abs(grayX[:, np.roll(np.arange(n), -1)] - grayX) # 横方向に周期シフト - 自分
 grayX_ = grayX_v + grayX_h # 縦横
 
-# ➁線形代数を使って差分を求める
+# 2.線形代数を使って差分を求める
 D0 = -np.eye(n) + np.roll(np.eye(n), -1, axis = 0)
 print(D0)
 
@@ -38,7 +38,7 @@ grayX_dv_ = grayX_dv.reshape(grayX.shape, order = 'F')
 grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'C')
 grayX_d_ = grayX_dv_ + grayX_dh_
 
-# ➀、➁の誤差を表示
+# 1、2 の誤差を表示
 print(la.norm(grayX_v - grayX_dv_))
 print(la.norm(grayX_h - grayX_dh_))
 print(la.norm(grayX_ - grayX_d_))
