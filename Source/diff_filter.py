@@ -6,7 +6,9 @@ from scipy import sparse
 from scipy.sparse import csr_matrix
 
 # 正方形のみの画像の読み込み
-grayX = cv2.imread("image/yasai256.jpg", 0) / 255
+X = cv2.imread("image/yasai256.jpg")
+X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
+grayX = cv2.cvtColor(X, cv2.COLOR_RGB2GRAY) / 255
 
 # 画像サイズを求める
 m, n = grayX.shape
@@ -44,6 +46,9 @@ print(la.norm(grayX_h - grayX_dh_))
 print(la.norm(grayX_ - grayX_d_))
 
 # 結果を表示
+plt.figure()
+plt.imshow(X)
+plt.title('original')
 plt.figure()
 plt.imshow(grayX, cmap = "gray")
 plt.title('gray')
