@@ -3,12 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg as la
 from scipy import sparse
-from scipy.sparse import csr_matrix, csc_matrix
+from scipy.sparse import csc_matrix
 
 # 長方形を含む四角形の画像の読み込み
 X = cv2.imread("image/yasai256.jpg")
 X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
 grayX = cv2.cvtColor(X, cv2.COLOR_RGB2GRAY) / 255
+temp_grayX = cv2.cvtColor(X, cv2.COLOR_RGB2GRAY) / 255
 
 # 画像サイズを求める
 y, x = grayX.shape
@@ -32,17 +33,31 @@ Dh = sparse.kron(csc_matrix(np.eye(y)), csc_matrix(D0_h)) # 単位行列 ⊗ D0_
 DvT = Dv.T
 DhT = Dh.T
 
-lam = 0.8; # λ（画像の滑らかさを考慮するパラメータ）
-I = sparse.eye(y * x, y * x)
+# λを設定（画像の滑らかさを考慮するパラメータ）
+lam = 0.5
 
 # 最小二乗法
+I = sparse.eye(y * x, y * x)
 X_star = sparse.linalg.spsolve(I + 2 * lam * (DvT @ Dv) + 2 * lam * (DhT @ Dh), Xtld)
 X_star = X_star.reshape(y, x, order = order)
+diff_bibunkeisu = la.norm(grayX - X_star)
 
-print(la.norm(grayX - X_star))
+# 最急降下法（勾配降下法）
+step = 0.1 # ステップ幅(α)
+xcurr = np.zeros((y * x, 1))
+maxIter = 100
+for k in range(maxIter):
+    print(f"iter:{k}, diff_gd:{la.norm(temp_grayX.reshape(y * x, 1) - xcurr):.16f}")
+    xnext = (xcurr - Xtld) + 2 * lam * (DvT @ Dv @ xcurr) + 2 * lam * (DhT @ Dh @ xcurr)
+    xcurr -= step * xnext
+
+xcurr = xcurr.reshape(y, x, order = order)
+print(f"diff_微分:{diff_bibunkeisu}")
+print(f"最小二乗法と最急降下法の差:{la.norm(X_star - xcurr)}")
 print(cv2.PSNR(grayX, noize_X))
+print(cv2.PSNR(grayX, xcurr))
 print(cv2.PSNR(grayX, X_star))
-    
+
 # 結果を表示
 plt.figure()
 plt.imshow(X)
@@ -54,6 +69,9 @@ plt.figure()
 plt.imshow(noize_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
+plt.imshow(xcurr, cmap = "gray")
+plt.title('gd_denoising')
+plt.figure()
 plt.imshow(X_star, cmap = "gray")
-plt.title('denoising')
+plt.title('differential_denoising')
 plt.show()
