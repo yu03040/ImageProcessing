@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg as la
 from scipy import sparse
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 
 # 正方形のみの画像の読み込み
 X = cv2.imread("image/yasai256.jpg")
@@ -23,7 +23,7 @@ D0 = -np.eye(n) + np.roll(np.eye(n), -1, axis = 0)
 print(D0)
 
 # クロネッカー積を使ってフィルタ係数を求める
-Dv = sparse.kron(csr_matrix(np.eye(m)), csr_matrix(D0)) # 単位行列 ⊗ D0
+Dv = sparse.kron(coo_matrix(np.eye(m)), coo_matrix(D0)).tocsr() # 単位行列 ⊗ D0
 # Dh = sparse.kron(csr_matrix(D0),csr_matrix(np.eye(n))) # D0 ⊗ 単位行列
 Dh = Dv
 
