@@ -14,8 +14,7 @@ grayX = cv2.cvtColor(X, cv2.COLOR_RGB2GRAY) / 255
 y, x = grayX.shape
 
 # ベクトル化するための連結方向の決定
-# （これを決めないと長方形画像のとき黒線が出現する）
-order = 'F' if y < x else 'C'
+order = 'F'
 
 # ノイズの生成
 sigma = 0.5; # ノイズの強さを調整
@@ -24,11 +23,11 @@ Xtld = noize_X.reshape(y * x, 1, order = order)
 
 # 線形代数を使って差分を求める
 D0_v = -np.eye(y) + np.roll(np.eye(y), -1, axis = 0)
-D0_h = -np.eye(x) + np.roll(np.eye(x), -1, axis = 1)
+D0_h = -np.eye(x) + np.roll(np.eye(x), -1, axis = 0)
 
 # クロネッカー積を使ってフィルタ係数を求める
 Dv = sparse.kron(coo_matrix(np.eye(x)), coo_matrix(D0_v)).tocsr() # 単位行列 ⊗ D0_v
-Dh = sparse.kron(coo_matrix(np.eye(y)), coo_matrix(D0_h)).tocsr() # 単位行列 ⊗ D0_h
+Dh = sparse.kron(coo_matrix(D0_h), coo_matrix(np.eye(y))).tocsr() # 単位行列 ⊗ D0_h
 DvT = Dv.T
 DhT = Dh.T
 

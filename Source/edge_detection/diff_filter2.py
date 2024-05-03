@@ -26,22 +26,22 @@ print(D0_h)
 
 # クロネッカー積を使ってフィルタ係数を求める
 Dv = sparse.kron(coo_matrix(np.eye(x)), coo_matrix(D0_v)).tocsr() # 単位行列 ⊗ D0_v
-Dh = sparse.kron(coo_matrix(np.eye(y)), coo_matrix(D0_h)).tocsr() # 単位行列 ⊗ D0_h
+Dh = sparse.kron(coo_matrix(D0_h), coo_matrix(np.eye(y))).tocsr() # 単位行列 ⊗ D0_h
 print(Dv)
 print()
 print(Dh)
 
-# 画像データ(2次元配列)からm×n行1列のベクトルデータに変換
+# 画像データ(2次元配列)から行方向に取り出して
+# (y×x)行1列のベクトルデータに変換
 grayX_vec = grayX.reshape(y * x, 1, order = 'F')
-grayX_vec2 = grayX.reshape(y * x, 1, order = 'C')
 
 # エッジ強度(検出)の計算
 grayX_dv = abs(Dv @ grayX_vec) # 縦
-grayX_dh = abs(Dh @ grayX_vec2) # 横
+grayX_dh = abs(Dh @ grayX_vec) # 横
 
 # 画像データ(2次元配列)に戻す
 grayX_dv_ = grayX_dv.reshape(grayX.shape, order = 'F')
-grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'C')
+grayX_dh_ = grayX_dh.reshape(grayX.shape, order = 'F')
 grayX_d_ = grayX_dv_ + grayX_dh_
 
 # 1、2 の誤差を表示
