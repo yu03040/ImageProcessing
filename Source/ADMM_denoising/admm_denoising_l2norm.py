@@ -15,10 +15,10 @@ y, x = grayX.shape
 
 # ベクトル化するための連結方向の決定
 # （これを決めないと長方形画像のとき黒線が出現する）
-order = 'F' if y < x else 'C'
+order = 'F'
 
 # ノイズの生成
-sigma = 0.5; # ノイズの強さを調整
+sigma = 0.3; # ノイズの強さを調整
 noize_X = grayX + sigma * np.random.normal(0, sigma, grayX.shape)
 Xtld = noize_X.reshape(y * x, 1, order = order)
 
@@ -43,8 +43,8 @@ lam = 0.5 # λ（画像の滑らかさを考慮するパラメータ）
 rho = 0.1 # ステップ幅
 
 # ADMM
-maxIter = 400
-epsilon = 1e-10
+maxIter = 500
+epsilon = 1e-13
 A = I + rho * (D.T @ D)
 
 # x^(k + 1) = (I + ρ(D^T)D)^(-1)(Xtld + ρ(D^T)(z^(k) - u^(k))) 
@@ -82,5 +82,5 @@ plt.imshow(noize_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
 plt.imshow(xcurr, cmap = "gray")
-plt.title('denoising')
+plt.title('admm l2 denoising')
 plt.show()

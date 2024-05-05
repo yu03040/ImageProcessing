@@ -17,7 +17,7 @@ y, x = grayX.shape
 order = 'F'
 
 # ノイズの生成
-sigma = 0.1; # ノイズの強さを調整
+sigma = 0.3; # ノイズの強さを調整
 noize_X = grayX + sigma * np.random.normal(size = (y, x))
 Xtld = noize_X.reshape(y * x, 1, order = order)
 
@@ -38,12 +38,12 @@ IT = I.T
 xcurr = np.zeros((y * x, 1))
 zcurr = np.zeros((dy, 1))
 ucurr = np.zeros((dy, 1))
-lam = 0.08 # λ（画像の滑らかさを考慮するパラメータ）
-rho = 1 # ステップ幅
+lam = 0.25 # λ（画像の滑らかさを考慮するパラメータ）
+rho = 0.75 # ステップ幅
 
 # ADMM
-maxIter = 100
-epsilon = 1e-16
+maxIter = 500
+epsilon = 1e-13
 A = I + rho * (D.T @ D)
 
 # 軟判定しきい値関数 ->
@@ -56,7 +56,7 @@ def soft_threshold(y, alpha):
 # z^(k + 1) = Soft(Dx^(k + 1) + u^(k))
 # u^(k + 1) = u^(k) + (Dx^(k + 1) + z^(k + 1))
 for k in range(maxIter):
-    xnext, info = sparse.linalg.cg(A, Xtld + rho * (D.T) @ (zcurr - ucurr), tol = 1e-15)
+    xnext, info = sparse.linalg.cg(A, Xtld + rho * (D.T) @ (zcurr - ucurr))
     xnext = xnext.reshape(-1, 1, order = order)
     znext = soft_threshold(D @ xnext + ucurr, lam / rho)
     znext = znext.reshape(-1, 1, order = order)
@@ -87,5 +87,5 @@ plt.imshow(noize_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
 plt.imshow(xcurr, cmap = "gray")
-plt.title('denoising')
+plt.title('admm l1 denoising')
 plt.show()
