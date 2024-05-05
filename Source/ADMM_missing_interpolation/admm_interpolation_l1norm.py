@@ -16,10 +16,14 @@ y, x = grayX.shape
 # ベクトル化するための連結方向の決定
 order = 'F'
 
-# ノイズの生成
-sigma = 0.3; # ノイズの強さを調整
-noize_X = grayX + sigma * np.random.normal(size = (y, x))
-Xtld = noize_X.reshape(y * x, 1, order = order)
+# 画像に穴を開ける(欠損画像)
+phi = np.random.rand(y, x) > 0.3
+phi = phi.astype(int)
+phi_vec = sparse.diags(phi.reshape(-1,order = 'F'), offsets = 0)
+
+loss_X = phi * grayX
+loss_X_vec = loss_X.reshape(y * x, 1, order = 'F')
+
 
 # 線形代数を使って差分を求める
 D0_v = -np.eye(y) + np.roll(np.eye(y), -1, axis = 0) # y×y
@@ -33,18 +37,13 @@ DT = D.T
 dy, dx = D.shape
 DTD = D.T @ D
 
-I = sparse.eye(y * x)
-IT = I.T
+# 初期化
+lam = 0.005 # λ（画像の滑らかさを考慮するパラメータ）
+rho = 0.1 # ステップ幅
+
 xcurr = np.zeros((y * x, 1))
 zcurr = np.zeros((dy, 1))
 ucurr = np.zeros((dy, 1))
-lam = 0.25 # λ（画像の滑らかさを考慮するパラメータ）
-rho = 0.75 # ステップ幅
-
-# ADMM
-maxIter = 500
-epsilon = 1e-13
-A = I + rho * (D.T @ D)
 
 # 軟判定しきい値関数 ->
 # しきい値を持ち、入力の大きさがそのしきい値を超えないと反応しない。
@@ -52,14 +51,18 @@ A = I + rho * (D.T @ D)
 def soft_threshold(y, alpha):
     return np.sign(y) * np.maximum(np.abs(y) - alpha, 0.0)
 
-# x^(k + 1) = (I + ρ(D^T)D)^(-1)(Xtld + ρ(D^T)(z^(k) - u^(k))) 
+# ADMM
+# x^(k + 1) = (Φ^TΦ + ρ(D^T)D)^(-1)((Φ^T)loss_X + ρ(D^T)(z^(k) - u^(k))) 
 # z^(k + 1) = Soft(Dx^(k + 1) + u^(k))
 # u^(k + 1) = u^(k) + (Dx^(k + 1) + z^(k + 1))
+maxIter = 500
+epsilon = 1e-13
+A = phi_vec.T @ phi_vec + rho * (D.T @ D)
+
 for k in range(maxIter):
-    xnext, info = sparse.linalg.cg(A, Xtld + rho * (D.T) @ (zcurr - ucurr))
+    xnext, info = sparse.linalg.cg(A, phi_vec.T @ loss_X_vec + rho * (D.T) @ (zcurr - ucurr))
     xnext = xnext.reshape(-1, 1, order = order)
     znext = soft_threshold(D @ xnext + ucurr, lam / rho)
-    znext = znext.reshape(-1, 1, order = order)
     unext = ucurr + ((D @ xnext) - znext)
     diff = la.norm(xnext - xcurr)
     if diff > epsilon:
@@ -72,7 +75,7 @@ for k in range(maxIter):
 
 xcurr = xcurr.reshape(y, x, order = order)
 print(la.norm(grayX - xcurr))
-print(cv2.PSNR(grayX, noize_X))
+print(cv2.PSNR(grayX, loss_X))
 print(cv2.PSNR(grayX, xcurr))
     
 # 結果を表示
@@ -83,9 +86,9 @@ plt.figure()
 plt.imshow(grayX, cmap = "gray")
 plt.title('gray')
 plt.figure()
-plt.imshow(noize_X, cmap = "gray")
+plt.imshow(loss_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
 plt.imshow(xcurr, cmap = "gray")
-plt.title('admm l1 denoising')
+plt.title('interpolation')
 plt.show()
