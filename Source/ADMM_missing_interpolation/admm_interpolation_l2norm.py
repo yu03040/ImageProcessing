@@ -17,7 +17,7 @@ y, x = grayX.shape
 order = 'F'
 
 # 画像に穴を開ける(欠損画像)
-phi = np.random.rand(y, x) > 0.3
+phi = np.random.rand(y, x) > 0.9
 phi = phi.astype(int)
 phi_vec = sparse.diags(phi.reshape(-1,order = 'F'), offsets = 0)
 
