@@ -8,3 +8,5 @@
 - [最小二乗法による欠損画素補間](Documentation/LSM_MissingPixelInterpolation.md)
 - [ADMMによるノイズ除去](Documentation/ADMM_Denoising.md)
 - [ADMMによる欠損画素補間](Documentation/ADMM_MissingPixelInterpolation.md)
+- [PDSによるノイズ除去](Documentation/PDS_Denoising.md)
+- [PDSによる欠損画素補間](Documentation/PDS_MissingPixelInterpolation.md)
