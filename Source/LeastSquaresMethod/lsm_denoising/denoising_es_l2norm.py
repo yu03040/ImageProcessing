@@ -31,29 +31,16 @@ Dh = sparse.kron(coo_matrix(D0_h), coo_matrix(np.eye(y))).tocsr() # 単位行列
 DvT = Dv.T
 DhT = Dh.T
 
-# 最急降下法（勾配降下法）
+I = sparse.eye(y * x, y * x)
+
+# 最小二乗法（微分係数 = 0 で解く）
 lam = 0.5 # 正則化パラメータ（λ）
-alpha = 0.1 # ステップ幅（α）
-xcurr = np.random.rand(y * x, 1)
-maxIter = 500
-epsilon = 1e-3
-diff = 0.0
-for i in range(maxIter):
-    xnext = xcurr - alpha * ((xcurr - Xtld) + 2 * lam * (DvT @ Dv @ xcurr) + 2 * lam * (DhT @ Dh @ xcurr))
-    difftemp = la.norm(xnext - xcurr)
-    if difftemp > epsilon:
-        diff = difftemp
-        print(f"iter:{i}, diff:{diff:.10f}")
-        xcurr = xnext
-    else:
-        i-=1
-        break
+X_star = sparse.linalg.spsolve(I + 2 * lam * (DvT @ Dv) + 2 * lam * (DhT @ Dh), Xtld)
+X_star = X_star.reshape(y, x, order = order)
 
-xcurr = xcurr.reshape(y, x, order = order)
-print(f"ノイズのPSNR：{cv2.PSNR(grayX, noise_X)}")
-print(f"最急降下法のPSNR：{cv2.PSNR(grayX, xcurr)}")
-print(f"最急降下法の反復回数:{i}, 現在の解と更新した解の誤差:{diff:.10f}")
-
+print(f"ノイズのPSNR:{cv2.PSNR(grayX, noise_X)}")
+print(f"厳密解のPSNR:{cv2.PSNR(grayX, X_star)}")
+    
 # 結果を表示
 plt.figure()
 plt.imshow(X)
@@ -65,6 +52,6 @@ plt.figure()
 plt.imshow(noise_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
-plt.imshow(xcurr, cmap = "gray")
-plt.title('GradientDescent_denoising')
+plt.imshow(X_star, cmap = "gray")
+plt.title('ExactSolution_denoising')
 plt.show()
