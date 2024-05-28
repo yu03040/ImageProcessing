@@ -17,9 +17,9 @@ y, x = grayX.shape
 order = 'F'
 
 # ノイズの生成
-sigma = 0.5; # ノイズの強さを調整
-noize_X = grayX + sigma * np.random.normal(0, sigma, grayX.shape)
-Xtld = noize_X.reshape(y * x, 1, order = order)
+sigma = 0.1; # ノイズの強さを調整
+noise_X = grayX + sigma * np.random.randn(y, x)
+Xtld = noise_X.reshape(y * x, 1, order = order)
 
 # 線形代数を使って差分を求める
 D0_v = -np.eye(y) + np.roll(np.eye(y), -1, axis = 0)
@@ -31,17 +31,36 @@ Dh = sparse.kron(coo_matrix(D0_h), coo_matrix(np.eye(y))).tocsr() # 単位行列
 DvT = Dv.T
 DhT = Dh.T
 
-lam = 0.5; # λ（画像の滑らかさを考慮するパラメータ）
-I = sparse.eye(y * x, y * x)
+lam = 0.5 # 正則化パラメータ（λ）
 
-# 最小二乗法（微分係数 = 0 で解く）
+# 最小二乗法
+I = sparse.eye(y * x, y * x)
 X_star = sparse.linalg.spsolve(I + 2 * lam * (DvT @ Dv) + 2 * lam * (DhT @ Dh), Xtld)
 X_star = X_star.reshape(y, x, order = order)
 
-print(la.norm(grayX - X_star))
-print(cv2.PSNR(grayX, noize_X))
-print(cv2.PSNR(grayX, X_star))
-    
+# 最急降下法（勾配降下法）
+alpha = 0.1 # ステップ幅(α)
+xcurr = np.random.rand(y * x, 1)
+diff = 0.0
+maxIter = 500
+for i in range(maxIter):
+    xnext = xcurr - alpha * ((xcurr - Xtld) + 2 * lam * (DvT @ Dv @ xcurr) + 2 * lam * (DhT @ Dh @ xcurr))
+    difftemp = la.norm(xnext - xcurr)
+    if difftemp > 1e-3:
+        diff = difftemp
+        print(f"iter:{i}, diff:{diff:.40f}")
+        xcurr = xnext
+    else:
+        i-=1
+        break
+
+xcurr = xcurr.reshape(y, x, order = order)
+print(f"ノイズのPSNR:{cv2.PSNR(grayX, noise_X)}")
+print(f"厳密解のPSNR:{cv2.PSNR(grayX, X_star)}")
+print(f"最急降下法のPSNR:{cv2.PSNR(grayX, xcurr)}")
+print(f"最小二乗法と最急降下法の差:{la.norm(X_star - xcurr)}")
+print(f"最急降下法の反復回数：{i}, 現在の解と更新した解の誤差：{diff:.40f}")
+
 # 結果を表示
 plt.figure()
 plt.imshow(X)
@@ -50,9 +69,12 @@ plt.figure()
 plt.imshow(grayX, cmap = "gray")
 plt.title('gray')
 plt.figure()
-plt.imshow(noize_X, cmap = "gray")
+plt.imshow(noise_X, cmap = "gray")
 plt.title('noise')
 plt.figure()
 plt.imshow(X_star, cmap = "gray")
-plt.title('denoising')
+plt.title('exactsolution_denoising')
+plt.figure()
+plt.imshow(xcurr, cmap = "gray")
+plt.title('gd_denoising')
 plt.show()
