@@ -29,32 +29,19 @@ D0_h = -np.eye(x) + np.roll(np.eye(x), -1, axis = 0) # x×x
 # クロネッカー積を使ってフィルタ係数を求める
 Dv = sparse.kron(coo_matrix(np.eye(x)), coo_matrix(D0_v)).tocsr() # 単位行列 ⊗ D0_v（yx×yx）
 Dh = sparse.kron(coo_matrix(D0_h), coo_matrix(np.eye(y))).tocsr() # 単位行列 ⊗ D0_h（yx×yx）
+DvT = Dv.T
+DhT = Dh.T
 
-# 最小二乗法（最急降下法で解く）
+# 最小二乗法（微分係数 = 0 で解く）
 lam = 0.5 # 正則化パラメータ（λ）
-alpha = 0.1 # ステップ幅（α）
-xcurr = np.random.rand(y * x, 1)
-maxIter = 500
-epsilon = 1e-4
-diff = 0.0
-for i in range(maxIter):
-    xnext = xcurr - alpha * (phi_vec.T @ (phi_vec @ xcurr - loss_X) + 2 * lam * (Dv.T @ Dv @ xcurr) + 2 * lam * (Dh.T @ Dh @ xcurr))
-    difftemp = la.norm(xnext - xcurr)
-    if difftemp > epsilon:
-        diff = difftemp
-        print(f"iter:{i}, diff:{diff:.10f}")
-        xcurr = xnext
-    else:
-        i-=1
-        break
-    
-xcurr = xcurr.reshape(y, x, order = order)
+X_star, info = sparse.linalg.cg(phi_vec.T @ phi_vec + 2 * lam * (Dv.T @ Dv) + 2 * lam * (Dh.T @ Dh), phi_vec.T @ loss_X)
+X_star = X_star.reshape(y, x, order = order)
+
 loss_X = loss_X.reshape(y, x, order = order)
 
 print(f"欠損のPSNR:{cv2.PSNR(grayX, loss_X)}")
-print(f"最急降下法のPSNR:{cv2.PSNR(grayX, xcurr)}")
-print(f"最急降下法の反復回数:{i}, 現在の解と更新した解の誤差:{diff:.10f}")
-
+print(f"厳密解のPSNR:{cv2.PSNR(grayX, X_star)}")
+    
 # 結果を表示
 plt.figure()
 plt.imshow(X)
@@ -66,6 +53,6 @@ plt.figure()
 plt.imshow(loss_X, cmap = "gray")
 plt.title('loss')
 plt.figure()
-plt.imshow(xcurr, cmap = "gray")
-plt.title('GradientDescent_interpolation')
+plt.imshow(X_star, cmap = "gray")
+plt.title('ExactSolution_interpolation')
 plt.show()
